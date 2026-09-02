@@ -86,7 +86,9 @@ void info(void)
     cpu_get_vendor(vendor);
     cpu_get_version(&family, &model);
 
-    terminal_write("XenonOS\n");
+    terminal_write("XenonOS v");
+    terminal_write(XENON_OS_VERSION);
+    terminal_write("\n");
 
     terminal_write("CPU vendor: ");
     terminal_write(vendor);
@@ -129,7 +131,7 @@ void echo(char *input)
     terminal_write("\n> ");
 }
 
-// MARK - Debug Commands
+// MARK: Debug Commands
 
 void memtest(void)
 {

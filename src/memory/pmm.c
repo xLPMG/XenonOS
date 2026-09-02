@@ -1,8 +1,6 @@
 #include "pmm.h"
+#include "constants.h"
 #include "multiboot.h"
-
-// Total number of physical frames the bitmap can track
-#define FRAME_COUNT (BITMAP_SIZE * 32)
 
 // Kernel start and end addresses provided by the linker script (linker.ld)
 extern uint32_t kernel_start;

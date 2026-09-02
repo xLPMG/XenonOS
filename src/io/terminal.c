@@ -1,7 +1,5 @@
 #include "terminal.h"
-
-#define VGA_WIDTH 80
-#define VGA_HEIGHT 25
+#include <constants.h>
 
 static volatile unsigned short *video =
     (volatile unsigned short *)0xB8000;
