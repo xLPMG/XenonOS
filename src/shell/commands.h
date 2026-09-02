@@ -10,4 +10,7 @@ void echo(char *input);
 
 void shutdown(void);
 
+// debug commands
+void memtest(void);
+
 #endif

@@ -3,6 +3,7 @@
 #include "commands.h"
 #include "terminal.h"
 #include "string.h"
+#include "pmm.h"
 
 void execute_command(char *input, int input_length)
 {
@@ -39,6 +40,10 @@ void execute_command(char *input, int input_length)
              input[4] == ' ')
     {
         echo(input);
+    }
+    else if (strcmp(input, "memtest") == 0)
+    {
+        memtest();
     }
     else
     {
@@ -122,4 +127,37 @@ void echo(char *input)
 {
     terminal_write(input + 5);
     terminal_write("\n> ");
+}
+
+// MARK - Debug Commands
+
+void memtest(void)
+{
+    uint32_t frame_0 = pmm_alloc();
+    terminal_write("Allocated frame: ");
+    char number[16];
+    itoa(frame_0, number);
+    terminal_write(number);
+    terminal_write("\n");
+
+    uint32_t frame_1 = pmm_alloc();
+    terminal_write("Allocated frame: ");
+    itoa(frame_1, number);
+    terminal_write(number);
+    terminal_write("\n");
+
+    pmm_free(frame_1);
+    terminal_write("Freed frame: ");
+    itoa(frame_1, number);
+    terminal_write(number);
+    terminal_write("\n");
+
+    uint32_t frame_2 = pmm_alloc();
+    terminal_write("Allocated frame: ");
+    itoa(frame_2, number);
+    terminal_write(number);
+    terminal_write("\n> ");
+
+    pmm_free(frame_2);
+    pmm_free(frame_0);
 }
