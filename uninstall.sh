@@ -1,0 +1,1 @@
+brew remove x86_64-elf-gcc x86_64-elf-binutils qemu nasm xorriso mtools i686-elf-grub
