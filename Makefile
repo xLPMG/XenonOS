@@ -4,11 +4,12 @@ AS = nasm
 GRUB = i686-elf-grub-mkrescue
 QEMU = qemu-system-x86_64
 
-CFLAGS = -m32 -ffreestanding -fno-pie -fno-stack-protector -nostdlib
+CFLAGS = -m32 -ffreestanding -fno-pie -fno-stack-protector -nostdlib \
+         -Isrc -Isrc/cpu -Isrc/io -Isrc/memory -Isrc/shell -Isrc/utils
 LDFLAGS = -m elf_i386 -T linker.ld
 
-SOURCES_C := $(wildcard src/*.c)
-SOURCES_ASM := $(wildcard src/*.asm)
+SOURCES_C := $(wildcard src/*.c src/*/*.c)
+SOURCES_ASM := $(wildcard src/*.asm src/*/*.asm)
 
 OBJECTS := $(SOURCES_C:.c=.o) \
            $(SOURCES_ASM:.asm=_asm.o)
@@ -34,4 +35,4 @@ run: xenonos.iso
 	$(QEMU) -cdrom xenonos.iso
 
 clean:
-	rm -rf src/*.o xenonos.bin xenonos.iso iso
+	rm -rf src/*.o src/*/*.o xenonos.bin xenonos.iso iso
