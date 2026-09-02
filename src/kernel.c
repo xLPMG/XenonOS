@@ -11,7 +11,7 @@ void kmain(unsigned int magic, unsigned int multiboot_info)
 
     multiboot_info_address = multiboot_info;
 
-    clear();
+    shell_initialize();
     interrupts_initialize();
     pmm_initialize(multiboot_info_address);
 

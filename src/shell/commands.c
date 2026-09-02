@@ -5,6 +5,12 @@
 #include "string.h"
 #include "pmm.h"
 
+static void help(void);
+static void info(void);
+static void echo(char *input);
+static void shutdown(void);
+static void memtest(void);
+
 void execute_command(char *input, int input_length)
 {
     terminal_putchar('\n');
@@ -21,7 +27,7 @@ void execute_command(char *input, int input_length)
     }
     else if (strcmp(input, "clear") == 0)
     {
-        clear();
+        shell_initialize();
     }
     else if (strcmp(input, "info") == 0)
     {
@@ -53,7 +59,13 @@ void execute_command(char *input, int input_length)
     input_length = 0;
 }
 
-void help(void)
+void shell_initialize(void)
+{
+    terminal_initialize();
+    terminal_write("Hello from XenonOS ^_^\n\n> ");
+}
+
+static void help(void)
 {
     terminal_write("Commands:\n");
     terminal_write("  help  - show this message\n");
@@ -64,13 +76,7 @@ void help(void)
     terminal_write("\n> ");
 }
 
-void clear(void)
-{
-    terminal_initialize();
-    terminal_write("Hello from XenonOS ^_^\n\n> ");
-}
-
-void info(void)
+static void info(void)
 {
     char vendor[13];
     char number[16];
@@ -115,7 +121,7 @@ void info(void)
     terminal_write("\n> ");
 }
 
-void shutdown(void)
+static void shutdown(void)
 {
     terminal_write("Shutting down...\n");
 
@@ -125,7 +131,7 @@ void shutdown(void)
         __asm__ volatile("hlt");
 }
 
-void echo(char *input)
+static void echo(char *input)
 {
     terminal_write(input + 5);
     terminal_write("\n> ");
@@ -133,7 +139,7 @@ void echo(char *input)
 
 // MARK: Debug Commands
 
-void memtest(void)
+static void memtest(void)
 {
     uint32_t frame_0 = pmm_alloc();
     terminal_write("Allocated frame: ");
