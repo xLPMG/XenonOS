@@ -4,34 +4,52 @@
 #include "terminal.h"
 #include "string.h"
 
-void execute_command(char* input, int input_length)
+void execute_command(char *input, int input_length)
 {
     terminal_putchar('\n');
 
     input[input_length] = '\0';
 
-    if (strcmp(input, "") == 0) {
+    if (strcmp(input, "") == 0)
+    {
         terminal_write("> ");
     }
-    else if (strcmp(input, "help") == 0) { help(); }
-    else if (strcmp(input, "clear") == 0) { clear(); }
-    else if (strcmp(input, "info") == 0) { info(); }
+    else if (strcmp(input, "help") == 0)
+    {
+        help();
+    }
+    else if (strcmp(input, "clear") == 0)
+    {
+        clear();
+    }
+    else if (strcmp(input, "info") == 0)
+    {
+        info();
+    }
     else if (strcmp(input, "shutdown") == 0 ||
-         strcmp(input, "exit") == 0) { shutdown(); }
+             strcmp(input, "exit") == 0)
+    {
+        shutdown();
+    }
     else if (strlen(input) >= 5 &&
              input[0] == 'e' &&
              input[1] == 'c' &&
              input[2] == 'h' &&
              input[3] == 'o' &&
-             input[4] == ' ') { echo(input); }
-    else {
+             input[4] == ' ')
+    {
+        echo(input);
+    }
+    else
+    {
         terminal_write("Never heard of that. Try 'help' if you're unsure.\n\n>");
     }
 
     input_length = 0;
 }
 
-void help(void) {
+void help(void)
+{
     terminal_write("Commands:\n");
     terminal_write("  help  - show this message\n");
     terminal_write("  clear - clear the screen\n");
@@ -41,12 +59,14 @@ void help(void) {
     terminal_write("\n> ");
 }
 
-void clear(void) {
+void clear(void)
+{
     terminal_initialize();
     terminal_write("Hello from XenonOS ^_^\n\n> ");
 }
 
-void info(void) {
+void info(void)
+{
     char vendor[13];
     char number[16];
 
@@ -88,16 +108,18 @@ void info(void) {
     terminal_write("\n> ");
 }
 
-void shutdown(void) {
+void shutdown(void)
+{
     terminal_write("Shutting down...\n");
 
-     __asm__ volatile ("cli");
+    __asm__ volatile("cli");
 
     while (1)
-        __asm__ volatile ("hlt");
+        __asm__ volatile("hlt");
 }
 
-void echo(char* input) {
+void echo(char *input)
+{
     terminal_write(input + 5);
     terminal_write("\n> ");
 }

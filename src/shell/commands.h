@@ -1,14 +1,13 @@
 #ifndef COMMANDS_H
 #define COMMANDS_H
 
-    void execute_command(char* input, int input_length);
+void execute_command(char *input, int input_length);
 
-    void help(void);
-    void clear(void);
-    void info(void);
-    void echo(char* input);
+void help(void);
+void clear(void);
+void info(void);
+void echo(char *input);
 
-    void shutdown(void);
-
+void shutdown(void);
 
 #endif

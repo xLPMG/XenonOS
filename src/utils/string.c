@@ -2,7 +2,8 @@
 
 int strcmp(const char *a, const char *b)
 {
-    while (*a && *a == *b) {
+    while (*a && *a == *b)
+    {
         a++;
         b++;
     }
@@ -46,7 +47,8 @@ int memcmp(const void *a, const void *b, size_t n)
     const unsigned char *x = a;
     const unsigned char *y = b;
 
-    for (size_t i = 0; i < n; i++) {
+    for (size_t i = 0; i < n; i++)
+    {
         if (x[i] != y[i])
             return x[i] - y[i];
     }
@@ -60,13 +62,15 @@ void itoa(unsigned int value, char *buffer)
     int i = 0;
     int j = 0;
 
-    if (value == 0) {
+    if (value == 0)
+    {
         buffer[0] = '0';
         buffer[1] = '\0';
         return;
     }
 
-    while (value > 0) {
+    while (value > 0)
+    {
         temp[i++] = '0' + (value % 10);
         value /= 10;
     }

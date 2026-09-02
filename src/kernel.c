@@ -13,7 +13,8 @@ void kmain(unsigned int magic, unsigned int multiboot_info)
     clear();
     interrupts_initialize();
 
-    while (1) {
-        __asm__ volatile ("hlt");
+    while (1)
+    {
+        __asm__ volatile("hlt");
     }
 }

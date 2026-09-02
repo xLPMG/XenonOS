@@ -1,6 +1,6 @@
 #include "terminal.h"
 
-#define VGA_WIDTH  80
+#define VGA_WIDTH 80
 #define VGA_HEIGHT 25
 
 static volatile unsigned short *video =
@@ -16,11 +16,10 @@ static unsigned short entry(char c)
 
 static void outb(unsigned short port, unsigned char value)
 {
-    __asm__ volatile (
+    __asm__ volatile(
         "outb %0, %1"
         :
-        : "a"(value), "Nd"(port)
-    );
+        : "a"(value), "Nd"(port));
 }
 
 static void update_cursor(void)
@@ -28,11 +27,11 @@ static void update_cursor(void)
     unsigned short position =
         row * VGA_WIDTH + column;
 
-    /* VGA cursor position low byte */
+    // VGA cursor position low byte
     outb(0x3D4, 0x0F);
     outb(0x3D5, position & 0xFF);
 
-    /* VGA cursor position high byte */
+    // VGA cursor position high byte
     outb(0x3D4, 0x0E);
     outb(0x3D5, position >> 8);
 }
@@ -50,8 +49,10 @@ static void scroll(void)
     if (row < VGA_HEIGHT)
         return;
 
-    for (int y = 1; y < VGA_HEIGHT; y++) {
-        for (int x = 0; x < VGA_WIDTH; x++) {
+    for (int y = 1; y < VGA_HEIGHT; y++)
+    {
+        for (int x = 0; x < VGA_WIDTH; x++)
+        {
             video[(y - 1) * VGA_WIDTH + x] =
                 video[y * VGA_WIDTH + x];
         }
@@ -75,7 +76,8 @@ void terminal_initialize(void)
 
 void terminal_putchar(char c)
 {
-    if (c == '\n') {
+    if (c == '\n')
+    {
         column = 0;
         row++;
 
@@ -88,7 +90,8 @@ void terminal_putchar(char c)
 
     column++;
 
-    if (column >= VGA_WIDTH) {
+    if (column >= VGA_WIDTH)
+    {
         column = 0;
         row++;
 
@@ -103,9 +106,12 @@ void terminal_backspace(void)
     if (column == 0 && row == 0)
         return;
 
-    if (column > 0) {
+    if (column > 0)
+    {
         column--;
-    } else {
+    }
+    else
+    {
         row--;
         column = VGA_WIDTH - 1;
     }

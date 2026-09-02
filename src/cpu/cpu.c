@@ -2,22 +2,12 @@
 
 typedef unsigned int uint32_t;
 
-static void cpuid(
-    uint32_t leaf,
-    uint32_t *eax,
-    uint32_t *ebx,
-    uint32_t *ecx,
-    uint32_t *edx
-)
+static void cpuid(uint32_t leaf, uint32_t *eax, uint32_t *ebx, uint32_t *ecx,
+                  uint32_t *edx)
 {
-    __asm__ volatile (
-        "cpuid"
-        : "=a"(*eax),
-          "=b"(*ebx),
-          "=c"(*ecx),
-          "=d"(*edx)
-        : "a"(leaf)
-    );
+    __asm__ volatile("cpuid"
+                     : "=a"(*eax), "=b"(*ebx), "=c"(*ecx), "=d"(*edx)
+                     : "a"(leaf));
 }
 
 void cpu_get_vendor(char *vendor)
@@ -26,23 +16,19 @@ void cpu_get_vendor(char *vendor)
 
     cpuid(0, &eax, &ebx, &ecx, &edx);
 
-    /*
-     * CPUID vendor string is:
-     *
-     * EBX ECX EDX
-     */
-    vendor[0]  = ebx & 0xFF;
-    vendor[1]  = (ebx >> 8) & 0xFF;
-    vendor[2]  = (ebx >> 16) & 0xFF;
-    vendor[3]  = (ebx >> 24) & 0xFF;
+    // CPUID vendor string is EBX ECX EDX
+    vendor[0] = ebx & 0xFF;
+    vendor[1] = (ebx >> 8) & 0xFF;
+    vendor[2] = (ebx >> 16) & 0xFF;
+    vendor[3] = (ebx >> 24) & 0xFF;
 
-    vendor[4]  = ecx & 0xFF;
-    vendor[5]  = (ecx >> 8) & 0xFF;
-    vendor[6]  = (ecx >> 16) & 0xFF;
-    vendor[7]  = (ecx >> 24) & 0xFF;
+    vendor[4] = ecx & 0xFF;
+    vendor[5] = (ecx >> 8) & 0xFF;
+    vendor[6] = (ecx >> 16) & 0xFF;
+    vendor[7] = (ecx >> 24) & 0xFF;
 
-    vendor[8]  = edx & 0xFF;
-    vendor[9]  = (edx >> 8) & 0xFF;
+    vendor[8] = edx & 0xFF;
+    vendor[9] = (edx >> 8) & 0xFF;
     vendor[10] = (edx >> 16) & 0xFF;
     vendor[11] = (edx >> 24) & 0xFF;
 
