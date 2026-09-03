@@ -1,7 +1,7 @@
 #ifndef PAGING_H
 #define PAGING_H
 
-typedef unsigned int uint32_t;
+#include "types.h"
 
 void paging_initialize(void);
 

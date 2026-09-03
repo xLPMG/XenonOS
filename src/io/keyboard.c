@@ -3,9 +3,6 @@
 #include "terminal.h"
 #include "commands.h"
 
-typedef unsigned char uint8_t;
-typedef unsigned short uint16_t;
-
 #define INPUT_SIZE 128
 
 static uint8_t inb(uint16_t port)

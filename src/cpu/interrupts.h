@@ -1,7 +1,7 @@
 #ifndef INTERRUPTS_H
 #define INTERRUPTS_H
 
-typedef unsigned int uint32_t;
+#include "types.h"
 
 void interrupts_initialize(void);
 

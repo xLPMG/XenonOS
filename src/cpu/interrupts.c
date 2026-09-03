@@ -2,10 +2,6 @@
 #include "terminal.h"
 #include "string.h"
 
-typedef unsigned char uint8_t;
-typedef unsigned short uint16_t;
-typedef unsigned int uint32_t;
-
 struct idt_entry
 {
     uint16_t offset_low;

@@ -1,7 +1,7 @@
 #ifndef STRING_H
 #define STRING_H
 
-typedef unsigned int size_t;
+#include "types.h"
 
 int strcmp(const char *a, const char *b);
 size_t strlen(const char *str);
