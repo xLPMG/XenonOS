@@ -22,4 +22,9 @@
 // Total number of physical frames the bitmap can track
 #define FRAME_COUNT (BITMAP_SIZE * 32)
 
+#define PAGE_DIRECTORY_ENTRIES 1024
+#define PAGE_TABLE_ENTRIES 1024
+#define RECURSIVE_INDEX 1023
+#define RECURSIVE_TABLES_BASE 0xFFC00000u
+
 #endif // CONSTANTS_H

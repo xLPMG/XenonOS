@@ -1,4 +1,6 @@
 #include "interrupts.h"
+#include "terminal.h"
+#include "string.h"
 
 typedef unsigned char uint8_t;
 typedef unsigned short uint16_t;
@@ -22,6 +24,11 @@ struct idt_ptr
 static struct idt_entry idt[256];
 static struct idt_ptr idt_descriptor;
 
+extern void divide_error_isr(void);
+extern void invalid_opcode_isr(void);
+extern void double_fault_isr(void);
+extern void general_protection_fault_isr(void);
+extern void page_fault_isr(void);
 extern void keyboard_isr(void);
 
 static void outb(uint16_t port, uint8_t value)
@@ -40,6 +47,10 @@ static void idt_set_gate(int number, uint32_t handler)
 
 static void pic_remap(void)
 {
+    // CPU exceptions:        0–31
+    // Hardware IRQs:         0–15
+    // IDT interrupt vectors: 0–255
+
     // Tell the master and slave PICs to start initialization
     outb(0x20, 0x11);
     outb(0xA0, 0x11);
@@ -79,6 +90,11 @@ void interrupts_initialize(void)
         idt[i].offset_high = 0;
     }
 
+    idt_set_gate(0, (uint32_t)divide_error_isr);
+    idt_set_gate(6, (uint32_t)invalid_opcode_isr);
+    idt_set_gate(8, (uint32_t)double_fault_isr);
+    idt_set_gate(13, (uint32_t)general_protection_fault_isr);
+    idt_set_gate(14, (uint32_t)page_fault_isr);
     // IRQ1 = interrupt 33
     idt_set_gate(33, (uint32_t)keyboard_isr);
 
@@ -91,4 +107,79 @@ void interrupts_initialize(void)
 
     // Finally enable hardware interrupts
     __asm__ volatile("sti");
+}
+
+static void exception_halt(void)
+{
+    __asm__ volatile("cli");
+
+    while (1)
+        __asm__ volatile("hlt");
+}
+
+void divide_error_handler(void)
+{
+    terminal_write("\n\nEXCEPTION: Divide Error (#0)\n");
+    exception_halt();
+}
+
+void invalid_opcode_handler(void)
+{
+    terminal_write("\n\nEXCEPTION: Invalid Opcode (#6)\n");
+    exception_halt();
+}
+
+void double_fault_handler(uint32_t error_code)
+{
+    char number[16];
+
+    terminal_write("\n\nEXCEPTION: Double Fault (#8)\n");
+
+    terminal_write("Error code: ");
+    itoa(error_code, number);
+    terminal_write(number);
+
+    terminal_write("\n");
+
+    exception_halt();
+}
+
+void general_protection_fault_handler(uint32_t error_code)
+{
+    char number[16];
+
+    terminal_write("\n\nEXCEPTION: General Protection Fault (#13)\n");
+    terminal_write("Error code: ");
+
+    itoa(error_code, number);
+    terminal_write(number);
+
+    terminal_write("\n");
+
+    exception_halt();
+}
+
+void page_fault_handler(uint32_t error_code)
+{
+    char number[16];
+
+    uint32_t fault_address;
+
+    __asm__ volatile(
+        "mov %%cr2, %0"
+        : "=r"(fault_address));
+
+    terminal_write("\n\nEXCEPTION: Page Fault (#14)\n");
+
+    terminal_write("Address: ");
+    itoa_hex(fault_address, number);
+    terminal_write(number);
+
+    terminal_write("\nError code: ");
+    itoa(error_code, number);
+    terminal_write(number);
+
+    terminal_write("\n");
+
+    exception_halt();
 }

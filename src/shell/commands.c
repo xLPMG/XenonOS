@@ -4,6 +4,7 @@
 #include "terminal.h"
 #include "string.h"
 #include "pmm.h"
+#include "paging.h"
 
 static void help(void);
 static void info(void);
@@ -144,28 +145,89 @@ static void memtest(void)
     uint32_t frame_0 = pmm_alloc();
     terminal_write("Allocated frame: ");
     char number[16];
-    itoa(frame_0, number);
+    itoa_hex(frame_0, number);
     terminal_write(number);
     terminal_write("\n");
 
     uint32_t frame_1 = pmm_alloc();
     terminal_write("Allocated frame: ");
-    itoa(frame_1, number);
+    itoa_hex(frame_1, number);
     terminal_write(number);
     terminal_write("\n");
 
     pmm_free(frame_1);
     terminal_write("Freed frame: ");
-    itoa(frame_1, number);
+    itoa_hex(frame_1, number);
     terminal_write(number);
     terminal_write("\n");
 
     uint32_t frame_2 = pmm_alloc();
     terminal_write("Allocated frame: ");
-    itoa(frame_2, number);
+    itoa_hex(frame_2, number);
     terminal_write(number);
-    terminal_write("\n> ");
+    terminal_write("\n");
 
     pmm_free(frame_2);
     pmm_free(frame_0);
+
+    // Paging test: remap a virtual page onto a different physical page and
+    // verify the CPU sees the new translation (not a stale TLB entry).
+    uint32_t test_virtual = 0x00200000;
+    uint32_t test_physical = 0x00201000;
+
+    *(volatile uint32_t *)test_physical = 0xDEADBEEF;
+
+    paging_map(test_virtual, test_physical, 3);
+
+    terminal_write("Mapped ");
+    itoa_hex(test_virtual, number);
+    terminal_write(number);
+    terminal_write(" -> ");
+    itoa_hex(paging_get_physical(test_virtual), number);
+    terminal_write(number);
+    terminal_write("\n");
+
+    uint32_t read_back = *(volatile uint32_t *)test_virtual;
+    terminal_write("Read back: ");
+    itoa_hex(read_back, number);
+    terminal_write(number);
+    terminal_write(read_back == 0xDEADBEEF ? " (OK)\n" : " (FAIL)\n");
+
+    paging_unmap(test_virtual);
+    terminal_write("Unmapped, physical now: ");
+    itoa_hex(paging_get_physical(test_virtual), number);
+    terminal_write(number);
+    terminal_write("\n");
+
+    // Restore the identity mapping so the page stays usable afterwards.
+    paging_map(test_virtual, test_virtual, 3);
+
+    // Paging test: map a virtual address beyond the first 4MB, which needs a
+    // page table to be allocated on demand for its directory entry.
+    uint32_t high_virtual = 0x01000000;
+    uint32_t high_physical = 0x00202000;
+
+    *(volatile uint32_t *)high_physical = 0xCAFEF00D;
+
+    paging_map(high_virtual, high_physical, 3);
+
+    terminal_write("Mapped ");
+    itoa_hex(high_virtual, number);
+    terminal_write(number);
+    terminal_write(" -> ");
+    itoa_hex(paging_get_physical(high_virtual), number);
+    terminal_write(number);
+    terminal_write("\n");
+
+    uint32_t high_read_back = *(volatile uint32_t *)high_virtual;
+    terminal_write("Read back: ");
+    itoa_hex(high_read_back, number);
+    terminal_write(number);
+    terminal_write(high_read_back == 0xCAFEF00D ? " (OK)\n" : " (FAIL)\n");
+
+    paging_unmap(high_virtual);
+    terminal_write("Unmapped, physical now: ");
+    itoa_hex(paging_get_physical(high_virtual), number);
+    terminal_write(number);
+    terminal_write("\n> ");
 }

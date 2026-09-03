@@ -80,3 +80,32 @@ void itoa(unsigned int value, char *buffer)
 
     buffer[j] = '\0';
 }
+
+void itoa_hex(unsigned int value, char *buffer)
+{
+    static const char digits[] = "0123456789abcdef";
+    char temp[8];
+    int i = 0;
+    int j = 0;
+
+    buffer[j++] = '0';
+    buffer[j++] = 'x';
+
+    if (value == 0)
+    {
+        buffer[j++] = '0';
+        buffer[j] = '\0';
+        return;
+    }
+
+    while (value > 0)
+    {
+        temp[i++] = digits[value % 16];
+        value /= 16;
+    }
+
+    while (i > 0)
+        buffer[j++] = temp[--i];
+
+    buffer[j] = '\0';
+}
