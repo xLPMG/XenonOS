@@ -5,7 +5,7 @@ GRUB = i686-elf-grub-mkrescue
 QEMU = qemu-system-x86_64
 
 CFLAGS = -m32 -ffreestanding -fno-pie -fno-stack-protector -nostdlib \
-         -Isrc -Isrc/cpu -Isrc/io -Isrc/memory -Isrc/shell -Isrc/utils -Isrc/tests
+         -Isrc -Isrc/cpu -Isrc/io -Isrc/memory -Isrc/shell -Isrc/tasks -Isrc/utils -Isrc/tests
 LDFLAGS = -m elf_i386 -T linker.ld
 
 SOURCES_C := $(wildcard src/*.c src/*/*.c)

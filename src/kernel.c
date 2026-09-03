@@ -3,6 +3,7 @@
 #include "commands.h"
 #include "pmm.h"
 #include "paging.h"
+#include "scheduler.h"
 
 unsigned int multiboot_info_address;
 
@@ -16,9 +17,10 @@ void kmain(unsigned int magic, unsigned int multiboot_info)
     interrupts_initialize();
     pmm_initialize(multiboot_info_address);
     paging_initialize();
+    scheduler_initialize();
 
     while (1)
     {
-        __asm__ volatile("hlt");
+        scheduler_yield();
     }
 }

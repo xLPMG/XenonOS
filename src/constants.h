@@ -22,9 +22,17 @@
 // Total number of physical frames the bitmap can track
 #define FRAME_COUNT (BITMAP_SIZE * 32)
 
+// MARK: Paging
+
 #define PAGE_DIRECTORY_ENTRIES 1024
 #define PAGE_TABLE_ENTRIES 1024
 #define RECURSIVE_INDEX 1023
 #define RECURSIVE_TABLES_BASE 0xFFC00000u
+
+// MARK: Thread
+
+// pmm_alloc only hands out single frames with no contiguity guarantee
+#define STACK_SIZE PAGE_SIZE
+#define POINTER_SIZE sizeof(void *)
 
 #endif // CONSTANTS_H

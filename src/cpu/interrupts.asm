@@ -18,6 +18,17 @@ extern page_fault_handler
 
 ; iretd = return from interrupt
 
+; pusha/popa push and pop all 8 general-purpose registers in this fixed
+; order (top of stack after pusha is edi, i.e. edi is pushed last):
+;   eax - return value / scratch          (caller-saved)
+;   ecx - scratch / loop counter          (caller-saved)
+;   edx - scratch                        (caller-saved)
+;   ebx - general purpose                (callee-saved)
+;   esp - original stack pointer (ignored by popa, esp isn't restored from it)
+;   ebp - frame/base pointer              (callee-saved)
+;   esi - source index, general purpose   (callee-saved)
+;   edi - destination index, general purpose (callee-saved)
+
 keyboard_isr:
     pusha
     call keyboard_handler
