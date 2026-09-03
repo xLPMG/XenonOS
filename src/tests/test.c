@@ -13,6 +13,7 @@ static int total_failures;
 extern void test_suite_string(void);
 extern void test_suite_pmm(void);
 extern void test_suite_paging(void);
+extern void test_suite_slab(void);
 
 void test_run_suite(const char *suite_name, const test_case_t *cases, int count)
 {
@@ -57,6 +58,7 @@ void test_run_all(void)
     test_suite_string();
     test_suite_pmm();
     test_suite_paging();
+    test_suite_slab();
 
     terminal_write("\n");
 
