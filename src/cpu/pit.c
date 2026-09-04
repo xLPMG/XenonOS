@@ -3,7 +3,7 @@
 #include "io_helper.h"
 #include "constants.h"
 
-static uint32_t pit_ticks = 0;
+static volatile uint32_t pit_ticks = 0;
 
 void pit_initialize(uint32_t frequency)
 {

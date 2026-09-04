@@ -73,7 +73,8 @@ void terminal_initialize(void)
 }
 
 // Assumes terminal_lock is already held by the caller.
-static void terminal_putchar_locked(char c)
+// Does not update the hardware cursor.
+static void terminal_putchar_locked_nocursor(char c)
 {
     if (c == '\n')
     {
@@ -81,7 +82,6 @@ static void terminal_putchar_locked(char c)
         row++;
 
         scroll();
-        update_cursor();
         return;
     }
 
@@ -96,7 +96,12 @@ static void terminal_putchar_locked(char c)
 
         scroll();
     }
+}
 
+// Assumes terminal_lock is already held by the caller.
+static void terminal_putchar_locked(char c)
+{
+    terminal_putchar_locked_nocursor(c);
     update_cursor();
 }
 
@@ -135,8 +140,13 @@ void terminal_backspace(void)
 
 void terminal_write(const char *str)
 {
+    uint32_t flags = spinlock_acquire(&terminal_lock);
+
     while (*str)
-        terminal_putchar(*str++);
+        terminal_putchar_locked_nocursor(*str++);
+    update_cursor();
+
+    spinlock_release(&terminal_lock, flags);
 }
 
 void terminal_set_color(enum vga_color fg, enum vga_color bg)
@@ -154,7 +164,8 @@ void terminal_write_colored(const char *str, enum vga_color fg, enum vga_color b
     current_color = (unsigned char)((bg << 4) | (fg & 0x0F));
 
     while (*str)
-        terminal_putchar_locked(*str++);
+        terminal_putchar_locked_nocursor(*str++);
+    update_cursor();
 
     current_color = previous_color;
 
@@ -170,7 +181,7 @@ static void write_formatted_locked(const char *format, va_list args)
     {
         if (*format != '%')
         {
-            terminal_putchar_locked(*format++);
+            terminal_putchar_locked_nocursor(*format++);
             continue;
         }
 
@@ -180,26 +191,26 @@ static void write_formatted_locked(const char *format, va_list args)
         case 'u':
             itoa(va_arg(args, unsigned int), number);
             for (char *p = number; *p; p++)
-                terminal_putchar_locked(*p);
+                terminal_putchar_locked_nocursor(*p);
             break;
         case 'x':
             itoa_hex(va_arg(args, unsigned int), number);
             for (char *p = number; *p; p++)
-                terminal_putchar_locked(*p);
+                terminal_putchar_locked_nocursor(*p);
             break;
         case 's':
             for (const char *s = va_arg(args, const char *); *s; s++)
-                terminal_putchar_locked(*s);
+                terminal_putchar_locked_nocursor(*s);
             break;
         case 'c':
-            terminal_putchar_locked((char)va_arg(args, int));
+            terminal_putchar_locked_nocursor((char)va_arg(args, int));
             break;
         case '%':
-            terminal_putchar_locked('%');
+            terminal_putchar_locked_nocursor('%');
             break;
         default:
-            terminal_putchar_locked('%');
-            terminal_putchar_locked(*format);
+            terminal_putchar_locked_nocursor('%');
+            terminal_putchar_locked_nocursor(*format);
             break;
         }
 
@@ -214,6 +225,7 @@ void terminal_writef(const char *format, ...)
 
     uint32_t flags = spinlock_acquire(&terminal_lock);
     write_formatted_locked(format, args);
+    update_cursor();
     spinlock_release(&terminal_lock, flags);
 
     va_end(args);
@@ -230,6 +242,7 @@ void terminal_writef_colored(enum vga_color fg, enum vga_color bg, const char *f
     current_color = (unsigned char)((bg << 4) | (fg & 0x0F));
 
     write_formatted_locked(format, args);
+    update_cursor();
 
     current_color = previous_color;
 

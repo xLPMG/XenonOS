@@ -23,21 +23,30 @@ static int test_frame(uint32_t frame)
     return bitmap[frame / 32] & (1 << (frame % 32));
 }
 
+// Word index to resume scanning from.
+static uint32_t search_hint = 0;
+
 static uint32_t first_free_frame(void)
 {
-    for (uint32_t i = 0; i < BITMAP_SIZE; i++)
+    for (uint32_t i = search_hint; i < BITMAP_SIZE; i++)
     {
         if (bitmap[i] != 0xFFFFFFFF)
         {
-            for (uint32_t j = 0; j < 32; j++)
-            {
-                if (!(bitmap[i] & (1 << j)))
-                {
-                    return i * 32 + j;
-                }
-            }
+            search_hint = i;
+            return i * 32 + __builtin_ctz(~bitmap[i]);
         }
     }
+
+    // Wrap around in case free frames were released behind the hint.
+    for (uint32_t i = 0; i < search_hint; i++)
+    {
+        if (bitmap[i] != 0xFFFFFFFF)
+        {
+            search_hint = i;
+            return i * 32 + __builtin_ctz(~bitmap[i]);
+        }
+    }
+
     return (uint32_t)-1; // no free frame
 }
 
@@ -124,4 +133,9 @@ void pmm_free(uint32_t address)
     uint32_t frame = address / PAGE_SIZE;
     // 2) mark it free
     clear_frame(frame);
+
+    // Pull the search hint back so this frame gets reused promptly.
+    uint32_t word = frame / 32;
+    if (word < search_hint)
+        search_hint = word;
 }

@@ -4,7 +4,9 @@ AS = nasm
 GRUB = i686-elf-grub-mkrescue
 QEMU = qemu-system-x86_64
 
-CFLAGS = -m32 -ffreestanding -fno-pie -fno-stack-protector -nostdlib \
+CFLAGS = -m32 -O2 -ffreestanding -fno-pie -fno-stack-protector -nostdlib \
+         -fno-tree-loop-distribute-patterns -fno-delete-null-pointer-checks \
+         -mno-mmx -mno-sse -mno-sse2 -mno-sse3 -mno-ssse3 -mno-sse4 -mno-avx \
          -Isrc -Isrc/cpu -Isrc/io -Isrc/memory -Isrc/shell -Isrc/tasks -Isrc/utils -Isrc/tests
 LDFLAGS = -m elf_i386 -T linker.ld
 
