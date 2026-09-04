@@ -1,12 +1,14 @@
 #include "terminal.h"
 #include <constants.h>
 #include "io_helper.h"
+#include "spinlock.h"
 
 static volatile unsigned short *video =
     (volatile unsigned short *)0xB8000;
 
 static int row = 0;
 static int column = 0;
+static spinlock_t terminal_lock;
 
 static unsigned short entry(char c)
 {
@@ -61,12 +63,16 @@ void terminal_initialize(void)
     row = 0;
     column = 0;
 
+    spinlock_initialize(&terminal_lock);
+
     clear();
     update_cursor();
 }
 
 void terminal_putchar(char c)
 {
+    uint32_t flags = spinlock_acquire(&terminal_lock);
+
     if (c == '\n')
     {
         column = 0;
@@ -74,6 +80,7 @@ void terminal_putchar(char c)
 
         scroll();
         update_cursor();
+        spinlock_release(&terminal_lock, flags);
         return;
     }
 
@@ -90,12 +97,18 @@ void terminal_putchar(char c)
     }
 
     update_cursor();
+    spinlock_release(&terminal_lock, flags);
 }
 
 void terminal_backspace(void)
 {
+    uint32_t flags = spinlock_acquire(&terminal_lock);
+
     if (column == 0 && row == 0)
+    {
+        spinlock_release(&terminal_lock, flags);
         return;
+    }
 
     if (column > 0)
     {
@@ -110,6 +123,7 @@ void terminal_backspace(void)
     video[row * VGA_WIDTH + column] = entry(' ');
 
     update_cursor();
+    spinlock_release(&terminal_lock, flags);
 }
 
 void terminal_write(const char *str)

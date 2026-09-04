@@ -1,9 +1,11 @@
 #include "scheduler.h"
 #include "pit.h"
 #include "types.h"
+#include "spinlock.h"
 
 static thread_t boot_thread;
 static thread_t *current = 0;
+static spinlock_t scheduler_lock;
 
 void scheduler_initialize(void)
 {
@@ -13,16 +15,22 @@ void scheduler_initialize(void)
 
     current = &boot_thread;
     boot_thread.next = &boot_thread;
+
+    spinlock_initialize(&scheduler_lock);
 }
 
 void scheduler_add(thread_t *thread)
 {
+    uint32_t flags = spinlock_acquire(&scheduler_lock);
     thread->next = current->next;
     current->next = thread;
+    spinlock_release(&scheduler_lock, flags);
 }
 
 void scheduler_yield(void)
 {
+    uint32_t flags = spinlock_acquire(&scheduler_lock);
+
     thread_t *prev = current;
     thread_t *candidate = current->next;
 
@@ -52,10 +60,19 @@ void scheduler_yield(void)
     }
 
     if (candidate == current)
+    {
+        spinlock_release(&scheduler_lock, flags);
         return;
+    }
 
     thread_t *old = current;
     current = candidate;
+
+    // Release before switching stacks: this thread won't run again to
+    // release it later, so holding it across the switch would deadlock
+    // the very next thread that tries to acquire it.
+    spinlock_release(&scheduler_lock, flags);
+
     context_switch((uint32_t *)&old->esp, (uint32_t)current->esp);
 }
 
