@@ -4,6 +4,7 @@
 #include "scheduler.h"
 #include "pmm.h"
 #include "paging.h"
+#include "pit.h"
 
 static slab_cache_t thread_pool;
 static int thread_pool_ready = 0;
@@ -77,3 +78,12 @@ void thread_destroy(thread_t *thread)
     slab_free(&thread_pool, thread);
 }
 
+void thread_sleep(uint32_t ms)
+{
+    thread_t *current = scheduler_current();
+    uint32_t ticks_to_sleep =
+        (ms * TIMER_HZ + 1000 - 1) / 1000; // +1000 to round up
+    current->wake_at = pit_get_ticks() + ticks_to_sleep;
+    current->state = THREAD_BLOCKED;
+    scheduler_yield();
+}

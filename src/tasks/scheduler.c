@@ -1,4 +1,6 @@
 #include "scheduler.h"
+#include "pit.h"
+#include "types.h"
 
 static thread_t boot_thread;
 static thread_t *current = 0;
@@ -24,15 +26,29 @@ void scheduler_yield(void)
     thread_t *prev = current;
     thread_t *candidate = current->next;
 
-    // Reclaim any terminated threads we pass along the way - safe here
-    // since none of them are the one currently executing this code.
-    while (candidate != current && candidate->state == THREAD_TERMINATED)
+    while (candidate != current)
     {
-        thread_t *dead = candidate;
-        candidate = candidate->next;
-
-        prev->next = candidate;
-        thread_destroy(dead);
+        if (candidate->state == THREAD_TERMINATED)
+        {
+            thread_t *dead = candidate;
+            candidate = candidate->next;
+            prev->next = candidate;
+            thread_destroy(dead);
+        }
+        // weird comparison style in case tick counter wraps around
+        else if (candidate->state == THREAD_BLOCKED && (int32_t)(pit_get_ticks() - candidate->wake_at) >= 0)
+        {
+            // skip over this
+            prev = candidate;
+            candidate = candidate->next;
+        }
+        else
+        {
+            // candidate was found
+            if (candidate->state == THREAD_BLOCKED)
+                candidate->state = THREAD_READY;
+            break;
+        }
     }
 
     if (candidate == current)

@@ -3,6 +3,9 @@
 
 #define XENON_OS_VERSION "0.1"
 
+#define PIT_FREQUENCY 1193180
+#define TIMER_HZ 100
+
 // MARK: Terminal
 
 #define VGA_WIDTH 80

@@ -3,6 +3,7 @@
 #include "string.h"
 #include "scheduler.h"
 #include "io_helper.h"
+#include "pit.h"
 
 struct idt_entry
 {
@@ -186,5 +187,6 @@ void page_fault_handler(uint32_t error_code)
 
 void timer_handler(void)
 {
+    pit_tick();
     scheduler_yield();
 }

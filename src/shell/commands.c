@@ -1,17 +1,19 @@
 #include "cpu.h"
 #include "memory.h"
 #include "commands.h"
+#include "constants.h"
 #include "terminal.h"
 #include "string.h"
 #include "pmm.h"
 #include "paging.h"
 #include "test.h"
+#include "pit.h"
 
 static void help(void);
 static void info(void);
 static void echo(char *input);
 static void shutdown(void);
-static void memtest(void);
+static void uptime(void);
 static void run_tests(void);
 
 void execute_command(char *input, int input_length)
@@ -50,6 +52,10 @@ void execute_command(char *input, int input_length)
     {
         echo(input);
     }
+    else if (strcmp(input, "uptime") == 0)
+    {
+        uptime();
+    }
     else if (strcmp(input, "test") == 0)
     {
         run_tests();
@@ -76,6 +82,7 @@ static void help(void)
     terminal_write("  echo  - print text\n");
     terminal_write("  info  - system information\n");
     terminal_write("  shutdown - shut down the system\n");
+    terminal_write("  uptime - show system uptime\n");
     terminal_write("  test  - run the unit test suite\n");
     terminal_write("\n> ");
 }
@@ -139,6 +146,26 @@ static void echo(char *input)
 {
     terminal_write(input + 5);
     terminal_write("\n> ");
+}
+
+static void uptime(void)
+{
+    uint32_t ms = pit_get_ticks() * 1000 / TIMER_HZ;
+    uint32_t seconds = ms / 1000;
+    uint32_t minutes = seconds / 60;
+    uint32_t hours = minutes / 60;
+
+    char number[16];
+    terminal_write("Uptime: ");
+    itoa(hours, number);
+    terminal_write(number);
+    terminal_write("h ");
+    itoa(minutes % 60, number);
+    terminal_write(number);
+    terminal_write("m ");
+    itoa(seconds % 60, number);
+    terminal_write(number);
+    terminal_write("s\n> ");
 }
 
 static void run_tests(void)

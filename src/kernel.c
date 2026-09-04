@@ -6,6 +6,7 @@
 #include "scheduler.h"
 #include "pit.h"
 #include "thread.h"
+#include "constants.h"
 
 unsigned int multiboot_info_address;
 
@@ -22,7 +23,7 @@ void kmain(unsigned int magic, unsigned int multiboot_info)
     scheduler_initialize();
 
     // Only start the timer once the scheduler is fully ready
-    pit_initialize(100);
+    pit_initialize(TIMER_HZ);
 
     while (1)
     {
