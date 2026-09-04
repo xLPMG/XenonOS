@@ -2,20 +2,10 @@
 #include "string.h"
 #include "terminal.h"
 #include "commands.h"
+#include "types.h"
+#include "io_helper.h"
 
 #define INPUT_SIZE 128
-
-static uint8_t inb(uint16_t port)
-{
-    uint8_t value;
-
-    __asm__ volatile(
-        "inb %1, %0"
-        : "=a"(value)
-        : "Nd"(port));
-
-    return value;
-}
 
 static int shift = 0;
 static int caps_lock = 0;

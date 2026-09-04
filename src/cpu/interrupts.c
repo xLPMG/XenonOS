@@ -1,6 +1,8 @@
 #include "interrupts.h"
 #include "terminal.h"
 #include "string.h"
+#include "scheduler.h"
+#include "io_helper.h"
 
 struct idt_entry
 {
@@ -25,12 +27,9 @@ extern void invalid_opcode_isr(void);
 extern void double_fault_isr(void);
 extern void general_protection_fault_isr(void);
 extern void page_fault_isr(void);
-extern void keyboard_isr(void);
 
-static void outb(uint16_t port, uint8_t value)
-{
-    __asm__ volatile("outb %0, %1" : : "a"(value), "Nd"(port));
-}
+extern void timer_isr(void);
+extern void keyboard_isr(void);
 
 static void idt_set_gate(int number, uint32_t handler)
 {
@@ -65,10 +64,10 @@ static void pic_remap(void)
     outb(0x21, 0x01);
     outb(0xA1, 0x01);
 
-    // Mask everything except IRQ1 (keyboard)
-    // Master:
+    // Mask everything except:
+    // bit 0 = 0 -> timer enabled
     // bit 1 = 0 -> keyboard enabled
-    outb(0x21, 0xFD);
+    outb(0x21, 0xFC);
 
     // Disable all slave IRQs.
     outb(0xA1, 0xFF);
@@ -91,8 +90,9 @@ void interrupts_initialize(void)
     idt_set_gate(8, (uint32_t)double_fault_isr);
     idt_set_gate(13, (uint32_t)general_protection_fault_isr);
     idt_set_gate(14, (uint32_t)page_fault_isr);
-    // IRQ1 = interrupt 33
-    idt_set_gate(33, (uint32_t)keyboard_isr);
+
+    idt_set_gate(32, (uint32_t)timer_isr);    // IRQ0 = interrupt 32
+    idt_set_gate(33, (uint32_t)keyboard_isr); // IRQ1 = interrupt 33
 
     idt_descriptor.limit = sizeof(idt) - 1;
     idt_descriptor.base = (uint32_t)&idt;
@@ -104,6 +104,8 @@ void interrupts_initialize(void)
     // Finally enable hardware interrupts
     __asm__ volatile("sti");
 }
+
+// MARK: Exception Handlers
 
 static void exception_halt(void)
 {
@@ -178,4 +180,11 @@ void page_fault_handler(uint32_t error_code)
     terminal_write("\n");
 
     exception_halt();
+}
+
+// MARK: IRQ Handlers
+
+void timer_handler(void)
+{
+    scheduler_yield();
 }

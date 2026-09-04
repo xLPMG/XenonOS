@@ -13,6 +13,7 @@ static int thread_pool_ready = 0;
 // it here forever instead of letting it fall off the end.
 static void thread_trampoline(void)
 {
+    __asm__ volatile("sti"); // sti = set interrupt flag
     thread_t *self = scheduler_current();
     self->entry();
 

@@ -1,5 +1,6 @@
 #include "terminal.h"
 #include <constants.h>
+#include "io_helper.h"
 
 static volatile unsigned short *video =
     (volatile unsigned short *)0xB8000;
@@ -10,14 +11,6 @@ static int column = 0;
 static unsigned short entry(char c)
 {
     return (unsigned short)((0x07 << 8) | (unsigned char)c);
-}
-
-static void outb(unsigned short port, unsigned char value)
-{
-    __asm__ volatile(
-        "outb %0, %1"
-        :
-        : "a"(value), "Nd"(port));
 }
 
 static void update_cursor(void)

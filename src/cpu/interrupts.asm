@@ -2,6 +2,7 @@ bits 32
 
 section .text
 
+global timer_isr
 global keyboard_isr
 global divide_error_isr
 global invalid_opcode_isr
@@ -9,6 +10,7 @@ global double_fault_isr
 global general_protection_fault_isr
 global page_fault_isr
 
+extern timer_handler
 extern keyboard_handler
 extern divide_error_handler
 extern invalid_opcode_handler
@@ -28,6 +30,24 @@ extern page_fault_handler
 ;   ebp - frame/base pointer              (callee-saved)
 ;   esi - source index, general purpose   (callee-saved)
 ;   edi - destination index, general purpose (callee-saved)
+
+;   retd - return from interrupt
+
+
+timer_isr:
+    pusha
+
+    ; Send EOI before calling the handler: scheduler_yield may switch to a
+    ; different thread's stack and never "return" to this exact call site,
+    ; so anything placed after call timer_handler isn't guaranteed to run.
+    mov al, 0x20
+    out 0x20, al
+
+    call timer_handler
+
+    popa
+    iretd
+
 
 keyboard_isr:
     pusha

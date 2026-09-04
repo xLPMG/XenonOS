@@ -4,6 +4,8 @@
 #include "pmm.h"
 #include "paging.h"
 #include "scheduler.h"
+#include "pit.h"
+#include "thread.h"
 
 unsigned int multiboot_info_address;
 
@@ -19,8 +21,11 @@ void kmain(unsigned int magic, unsigned int multiboot_info)
     paging_initialize();
     scheduler_initialize();
 
+    // Only start the timer once the scheduler is fully ready
+    pit_initialize(100);
+
     while (1)
     {
-        scheduler_yield();
+        __asm__ volatile("hlt");
     }
 }
