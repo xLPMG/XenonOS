@@ -4,3 +4,4 @@ iso-qemu/
 *.bin
 *.iso
 .DS_Store
+.vscode/

@@ -10,6 +10,7 @@
 #include "pit.h"
 #include "serial.h"
 #include "framebuffer.h"
+#include "graphics.h"
 
 static void help(void);
 static void info(void);
@@ -162,11 +163,8 @@ static void gui(void)
 
     const struct framebuffer_info *fb = framebuffer_get_info();
 
-    uint32_t *pixels = (uint32_t *)fb->addr;
-    uint32_t pixel_count = (fb->pitch / 4) * fb->height;
-
-    for (uint32_t i = 0; i < pixel_count; i++)
-        pixels[i] = 0x00202020; // placeholder background until real GUI drawing exists
+    gfx_fill_rect(0, 0, fb->width, fb->height, 0x00202020);
+    gfx_draw_string(16, 16, "Hello from XenonOS ^_^", 0x00FFFFFF, 0x00202020);
 
     serial_write("Switched to graphics mode.\n");
 }
