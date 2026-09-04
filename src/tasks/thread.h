@@ -17,7 +17,7 @@ enum thread_state {
 struct thread {
   uint32_t id;
   void *esp;               // stack pointer
-  void *mem;               // pointer to the thread's memory region
+  void *mem;               // virtual base address of the thread's memory region
   enum thread_state state; // current state of the thread
   struct thread *next;     // pointer to the next thread in the list
   void (*entry)(void);     // the thread's actual entry point

@@ -8,6 +8,12 @@
 
 static slab_cache_t thread_pool;
 static int thread_pool_ready = 0;
+static uint32_t next_stack_vaddr = STACK_REGION_BASE;
+
+static inline uint32_t stack_frame_vaddr(uint32_t stack_vbase, int i)
+{
+    return stack_vbase + i * PAGE_SIZE;
+}
 
 // Runs the thread's real entry point. If it ever returns, there's no valid
 // caller to return to (this thread was jumped into, never called), so park
@@ -40,16 +46,16 @@ thread_t *thread_create(uint32_t id, void (*entry)(void))
     if (!thread)
         return 0;
 
-    uint32_t stack_frame = pmm_alloc();
-    if (stack_frame == (uint32_t)-1)
-        return 0;
+    uint32_t stack_vbase = next_stack_vaddr;
+    next_stack_vaddr += (STACK_PAGES + 1) * PAGE_SIZE; // +1 for guard page
 
-    // identity-map the stack frame so the CPU can access it directly
-    paging_map(stack_frame, stack_frame, 3);
-    thread->mem = (void *)stack_frame;
-
-    // stack grows downwards!
-    uint8_t *stack_top = (uint8_t *)stack_frame + STACK_SIZE;
+    for (int i = 0; i < STACK_PAGES; i++)
+    {
+        uint32_t frame = pmm_alloc(); // allocate memory one frame at a time (physically separate frames)
+        paging_map(stack_frame_vaddr(stack_vbase, i), frame, 3);
+    }
+    thread->mem = (void *)stack_vbase;
+    uint8_t *stack_top = (uint8_t *)(stack_vbase + STACK_PAGES * PAGE_SIZE);
 
     stack_top -= POINTER_SIZE;
     *(void **)stack_top = (void *)thread_trampoline;
@@ -72,9 +78,15 @@ thread_t *thread_create(uint32_t id, void (*entry)(void))
 
 void thread_destroy(thread_t *thread)
 {
-    // Identity-mapped frames are never unmapped once claimed (same
-    // convention as slab.c) so just hand the physical frame back.
-    pmm_free((uint32_t)thread->mem);
+    // Free the stack frames allocated for this thread
+    uint32_t stack_vbase = (uint32_t)thread->mem;
+    for (int i = 0; i < STACK_PAGES; i++)
+    {
+        uint32_t vaddr = stack_frame_vaddr(stack_vbase, i);
+        uint32_t frame = paging_get_physical(vaddr);
+        paging_unmap(vaddr);
+        pmm_free(frame);
+    }
     slab_free(&thread_pool, thread);
 }
 

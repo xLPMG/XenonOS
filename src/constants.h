@@ -34,8 +34,8 @@
 
 // MARK: Thread
 
-// pmm_alloc only hands out single frames with no contiguity guarantee
-#define STACK_SIZE PAGE_SIZE
+#define STACK_PAGES 4 // Number of pages per thread stack
+#define STACK_REGION_BASE 0xD0000000 // Base address for thread stack region
 #define POINTER_SIZE sizeof(void *)
 
 #endif // CONSTANTS_H
