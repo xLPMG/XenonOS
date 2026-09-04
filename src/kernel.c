@@ -3,6 +3,7 @@
 #include "commands.h"
 #include "pmm.h"
 #include "paging.h"
+#include "heap.h"
 #include "tss.h"
 #include "scheduler.h"
 #include "pit.h"
@@ -21,6 +22,7 @@ void kmain(unsigned int magic, unsigned int multiboot_info)
     interrupts_initialize();
     pmm_initialize(multiboot_info_address);
     paging_initialize();
+    heap_initialize();
     tss_initialize();
     scheduler_initialize();
 

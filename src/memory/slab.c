@@ -3,16 +3,6 @@
 #include "pmm.h"
 #include "constants.h"
 
-// Slab header lives at the start of the page it describes
-// the rest of the page is turned into object-sized chunks for allocation
-struct slab
-{
-    struct slab *next;
-    void *free_list;
-    uint32_t free_count;
-    uint32_t capacity;
-};
-
 void slab_cache_init(slab_cache_t *cache, uint32_t object_size)
 {
     if (object_size < sizeof(void *))
@@ -34,6 +24,7 @@ static slab_t *slab_create(slab_cache_t *cache)
 
     slab_t *slab = (slab_t *)frame;
     slab->next = 0;
+    slab->cache = cache;
     slab->free_list = 0;
     slab->free_count = 0;
 

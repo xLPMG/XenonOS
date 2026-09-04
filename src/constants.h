@@ -32,6 +32,14 @@
 #define RECURSIVE_INDEX 1023
 #define RECURSIVE_TABLES_BASE 0xFFC00000u
 
+// MARK: Heap
+
+// Virtual region for allocations too big for a slab bin. Frames backing this
+// region aren't guaranteed physically contiguous, so each allocation gets its
+// own slice of consecutive virtual addresses to map them into.
+#define LARGE_ALLOC_REGION_BASE 0xC0000000u
+#define LARGE_ALLOC_REGION_END 0xD0000000u // abuts STACK_REGION_BASE
+
 // MARK: Thread
 
 #define STACK_PAGES 4 // Number of pages per thread stack

@@ -14,6 +14,9 @@ extern void test_suite_string(void);
 extern void test_suite_pmm(void);
 extern void test_suite_paging(void);
 extern void test_suite_slab(void);
+extern void test_suite_heap(void);
+extern void test_suite_spinlock(void);
+extern void test_suite_thread(void);
 
 void test_run_suite(const char *suite_name, const test_case_t *cases, int count)
 {
@@ -46,6 +49,9 @@ void test_run_all(void)
     test_suite_pmm();
     test_suite_paging();
     test_suite_slab();
+    test_suite_heap();
+    test_suite_spinlock();
+    test_suite_thread();
 
     terminal_write("\n");
 
