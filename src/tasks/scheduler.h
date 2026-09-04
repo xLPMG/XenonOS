@@ -13,4 +13,7 @@ void scheduler_add(thread_t *thread);
 // Yields execution from the current thread to the next thread in the ready queue.
 void scheduler_yield(void);
 
+// Returns the thread that's currently running.
+thread_t *scheduler_current(void);
+
 #endif // SCHEDULER_H

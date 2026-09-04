@@ -21,11 +21,29 @@ void scheduler_add(thread_t *thread)
 
 void scheduler_yield(void)
 {
-    thread_t *next = current->next;
-    if (next == current)
+    thread_t *prev = current;
+    thread_t *candidate = current->next;
+
+    // Reclaim any terminated threads we pass along the way - safe here
+    // since none of them are the one currently executing this code.
+    while (candidate != current && candidate->state == THREAD_TERMINATED)
+    {
+        thread_t *dead = candidate;
+        candidate = candidate->next;
+
+        prev->next = candidate;
+        thread_destroy(dead);
+    }
+
+    if (candidate == current)
         return;
 
     thread_t *old = current;
-    current = next;
+    current = candidate;
     context_switch((uint32_t *)&old->esp, (uint32_t)current->esp);
+}
+
+thread_t *scheduler_current(void)
+{
+    return current;
 }

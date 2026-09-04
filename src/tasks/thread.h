@@ -20,6 +20,7 @@ struct thread {
   void *mem;               // pointer to the thread's memory region
   enum thread_state state; // current state of the thread
   struct thread *next;     // pointer to the next thread in the list
+  void (*entry)(void);     // the thread's actual entry point
 };
 
 // Saves the currently running context's esp into *old_esp, then switches
@@ -29,5 +30,9 @@ void context_switch(uint32_t *old_esp, uint32_t new_esp);
 // Creates a new thread with the given id and entry point.
 // The new thread will have its own stack and be ready to run.
 thread_t *thread_create(uint32_t id, void (*entry)(void));
+
+// Frees a terminated thread's stack and header. Must only be called on a
+// thread that isn't currently running (i.e. not `current`).
+void thread_destroy(thread_t *thread);
 
 #endif // THREAD_H
