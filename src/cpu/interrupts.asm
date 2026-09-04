@@ -6,7 +6,6 @@ global timer_isr
 global keyboard_isr
 global divide_error_isr
 global invalid_opcode_isr
-global double_fault_isr
 global general_protection_fault_isr
 global page_fault_isr
 
@@ -14,7 +13,6 @@ extern timer_handler
 extern keyboard_handler
 extern divide_error_handler
 extern invalid_opcode_handler
-extern double_fault_handler
 extern general_protection_fault_handler
 extern page_fault_handler
 
@@ -70,19 +68,6 @@ divide_error_isr:
 invalid_opcode_isr:
     pusha
     call invalid_opcode_handler
-    popa
-    iretd
-
-
-double_fault_isr:
-    pusha
-
-    mov eax, [esp + 32]
-    push eax
-
-    call double_fault_handler
-
-    add esp, 4
     popa
     iretd
 

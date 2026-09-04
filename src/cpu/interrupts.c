@@ -25,7 +25,6 @@ static struct idt_ptr idt_descriptor;
 
 extern void divide_error_isr(void);
 extern void invalid_opcode_isr(void);
-extern void double_fault_isr(void);
 extern void general_protection_fault_isr(void);
 extern void page_fault_isr(void);
 
@@ -39,6 +38,17 @@ static void idt_set_gate(int number, uint32_t handler)
     idt[number].zero = 0;
     idt[number].type_attr = 0x8E;
     idt[number].offset_high = (handler >> 16) & 0xFFFF;
+}
+
+// Task gates don't use the offset fields (the TSS's own EIP is used instead);
+// 'selector' is a TSS selector, not a code segment selector.
+void interrupts_set_task_gate(int number, uint16_t selector)
+{
+    idt[number].offset_low = 0;
+    idt[number].selector = selector;
+    idt[number].zero = 0;
+    idt[number].type_attr = 0x85; // present, DPL=0, 32-bit task gate
+    idt[number].offset_high = 0;
 }
 
 static void pic_remap(void)
@@ -88,7 +98,8 @@ void interrupts_initialize(void)
 
     idt_set_gate(0, (uint32_t)divide_error_isr);
     idt_set_gate(6, (uint32_t)invalid_opcode_isr);
-    idt_set_gate(8, (uint32_t)double_fault_isr);
+    // Vector 8 (#DF) is wired up as a task gate by tss_initialize(), once
+    // paging is set up and the TSS's CR3 can be captured correctly.
     idt_set_gate(13, (uint32_t)general_protection_fault_isr);
     idt_set_gate(14, (uint32_t)page_fault_isr);
 
@@ -116,69 +127,50 @@ static void exception_halt(void)
         __asm__ volatile("hlt");
 }
 
+// Sets the color once and leaves it, since exception_print_field calls
+// that follow should stay red too, and the machine halts right after anyway.
+void exception_report(const char *name)
+{
+    terminal_set_color(VGA_COLOR_LIGHT_RED, VGA_COLOR_BLACK);
+    terminal_writef("\n\nCPU says we're cooked. You might wanna look into this: %s\n", name);
+}
+
+void exception_print_field(const char *label, uint32_t value, int hex)
+{
+    terminal_writef(hex ? "%s%x\n" : "%s%u\n", label, value);
+}
+
 void divide_error_handler(void)
 {
-    terminal_write("\n\nEXCEPTION: Divide Error (#0)\n");
+    exception_report("Divide Error (#0)");
     exception_halt();
 }
 
 void invalid_opcode_handler(void)
 {
-    terminal_write("\n\nEXCEPTION: Invalid Opcode (#6)\n");
-    exception_halt();
-}
-
-void double_fault_handler(uint32_t error_code)
-{
-    char number[16];
-
-    terminal_write("\n\nEXCEPTION: Double Fault (#8)\n");
-
-    terminal_write("Error code: ");
-    itoa(error_code, number);
-    terminal_write(number);
-
-    terminal_write("\n");
-
+    exception_report("Invalid Opcode (#6)");
     exception_halt();
 }
 
 void general_protection_fault_handler(uint32_t error_code)
 {
-    char number[16];
-
-    terminal_write("\n\nEXCEPTION: General Protection Fault (#13)\n");
-    terminal_write("Error code: ");
-
-    itoa(error_code, number);
-    terminal_write(number);
-
-    terminal_write("\n");
+    exception_report("General Protection Fault (#13)");
+    exception_print_field("Error code: ", error_code, 0);
 
     exception_halt();
 }
 
 void page_fault_handler(uint32_t error_code)
 {
-    char number[16];
-
     uint32_t fault_address;
 
     __asm__ volatile(
         "mov %%cr2, %0"
         : "=r"(fault_address));
 
-    terminal_write("\n\nEXCEPTION: Page Fault (#14)\n");
-
-    terminal_write("Address: ");
-    itoa_hex(fault_address, number);
-    terminal_write(number);
-
-    terminal_write("\nError code: ");
-    itoa(error_code, number);
-    terminal_write(number);
-
-    terminal_write("\n");
+    exception_report("Page Fault (#14)");
+    exception_print_field("Address: ", fault_address, 1);
+    exception_print_field("Error code: ", error_code, 0);
 
     exception_halt();
 }

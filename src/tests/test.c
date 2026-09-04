@@ -26,30 +26,17 @@ void test_run_suite(const char *suite_name, const test_case_t *cases, int count)
 
         if (test_current_failed)
         {
-            char line[16];
-
             total_failures++;
 
-            terminal_write("[FAIL] ");
-            terminal_write(suite_name);
-            terminal_write(" / ");
-            terminal_write(cases[i].name);
-            terminal_write("\n       ");
-            terminal_write(test_current_failure_expr);
-            terminal_write(" at ");
-            terminal_write(test_current_failure_file);
-            terminal_write(":");
-            itoa((unsigned int)test_current_failure_line, line);
-            terminal_write(line);
-            terminal_write("\n");
+            terminal_writef_colored(VGA_COLOR_LIGHT_RED, VGA_COLOR_BLACK, "[FAIL] %s / %s\n       %s at %s:%u\n",
+                                    suite_name, cases[i].name, test_current_failure_expr,
+                                    test_current_failure_file, (unsigned int)test_current_failure_line);
         }
     }
 }
 
 void test_run_all(void)
 {
-    char count[16];
-
     total_tests = 0;
     total_failures = 0;
 
@@ -64,16 +51,13 @@ void test_run_all(void)
 
     if (total_failures == 0)
     {
-        terminal_write("Test was successful. Everything works as intended :)\n");
+        terminal_write_colored("Test was successful. Everything works as intended :)\n",
+                               VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK);
     }
     else
     {
-        itoa((unsigned int)total_failures, count);
-        terminal_write(count);
-        terminal_write(" of ");
-        itoa((unsigned int)total_tests, count);
-        terminal_write(count);
-        terminal_write(" tests failed.\n");
+        terminal_writef_colored(VGA_COLOR_LIGHT_RED, VGA_COLOR_BLACK, "%u of %u tests failed.\n",
+                                (unsigned int)total_failures, (unsigned int)total_tests);
     }
 
     terminal_write("\n> ");

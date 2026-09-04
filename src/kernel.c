@@ -3,6 +3,7 @@
 #include "commands.h"
 #include "pmm.h"
 #include "paging.h"
+#include "tss.h"
 #include "scheduler.h"
 #include "pit.h"
 #include "thread.h"
@@ -20,6 +21,7 @@ void kmain(unsigned int magic, unsigned int multiboot_info)
     interrupts_initialize();
     pmm_initialize(multiboot_info_address);
     paging_initialize();
+    tss_initialize();
     scheduler_initialize();
 
     // Only start the timer once the scheduler is fully ready

@@ -59,10 +59,15 @@ align 8
 ; Null descriptor
 ; 32-bit flat code segment
 ; 32-bit flat data segment
+; Main TSS and double-fault TSS descriptors are filled in at runtime by
+; tss_initialize() once the base addresses of the C-defined TSS structs are known.
+global gdt
 gdt:
     dq 0x0000000000000000
     dq 0x00CF9A000000FFFF
     dq 0x00CF92000000FFFF
+    dq 0x0000000000000000
+    dq 0x0000000000000000
 
 gdt_end:
 

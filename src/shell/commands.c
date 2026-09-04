@@ -90,7 +90,6 @@ static void help(void)
 static void info(void)
 {
     char vendor[13];
-    char number[16];
 
     unsigned int family;
     unsigned int model;
@@ -103,28 +102,11 @@ static void info(void)
     cpu_get_vendor(vendor);
     cpu_get_version(&family, &model);
 
-    terminal_write("XenonOS v");
-    terminal_write(XENON_OS_VERSION);
-    terminal_write("\n");
-
-    terminal_write("CPU vendor: ");
-    terminal_write(vendor);
-    terminal_write("\n");
-
-    terminal_write("CPU family: ");
-    itoa(family, number);
-    terminal_write(number);
-    terminal_write("\n");
-
-    terminal_write("CPU model: ");
-    itoa(model, number);
-    terminal_write(number);
-    terminal_write("\n");
-
-    terminal_write("Memory: ");
-    itoa(memory_kb / 1024, number);
-    terminal_write(number);
-    terminal_write(" MB\n");
+    terminal_writef("XenonOS v%s\n", XENON_OS_VERSION);
+    terminal_writef("CPU vendor: %s\n", vendor);
+    terminal_writef("CPU family: %u\n", family);
+    terminal_writef("CPU model: %u\n", model);
+    terminal_writef("Memory: %u MB\n", memory_kb / 1024);
 
     terminal_write("Mode: 32-bit protected mode\n");
     terminal_write("Interrupts: enabled\n");
@@ -155,17 +137,7 @@ static void uptime(void)
     uint32_t minutes = seconds / 60;
     uint32_t hours = minutes / 60;
 
-    char number[16];
-    terminal_write("Uptime: ");
-    itoa(hours, number);
-    terminal_write(number);
-    terminal_write("h ");
-    itoa(minutes % 60, number);
-    terminal_write(number);
-    terminal_write("m ");
-    itoa(seconds % 60, number);
-    terminal_write(number);
-    terminal_write("s\n> ");
+    terminal_writef("Uptime: %uh %um %us\n> ", hours, minutes % 60, seconds % 60);
 }
 
 static void run_tests(void)

@@ -2,17 +2,20 @@
 #include <constants.h>
 #include "io_helper.h"
 #include "spinlock.h"
+#include "string.h"
+#include <stdarg.h>
 
 static volatile unsigned short *video =
     (volatile unsigned short *)0xB8000;
 
 static int row = 0;
 static int column = 0;
+static unsigned char current_color = (VGA_COLOR_BLACK << 4) | VGA_COLOR_LIGHT_GREY;
 static spinlock_t terminal_lock;
 
 static unsigned short entry(char c)
 {
-    return (unsigned short)((0x07 << 8) | (unsigned char)c);
+    return (unsigned short)((current_color << 8) | (unsigned char)c);
 }
 
 static void update_cursor(void)
@@ -69,10 +72,9 @@ void terminal_initialize(void)
     update_cursor();
 }
 
-void terminal_putchar(char c)
+// Assumes terminal_lock is already held by the caller.
+static void terminal_putchar_locked(char c)
 {
-    uint32_t flags = spinlock_acquire(&terminal_lock);
-
     if (c == '\n')
     {
         column = 0;
@@ -80,7 +82,6 @@ void terminal_putchar(char c)
 
         scroll();
         update_cursor();
-        spinlock_release(&terminal_lock, flags);
         return;
     }
 
@@ -97,6 +98,12 @@ void terminal_putchar(char c)
     }
 
     update_cursor();
+}
+
+void terminal_putchar(char c)
+{
+    uint32_t flags = spinlock_acquire(&terminal_lock);
+    terminal_putchar_locked(c);
     spinlock_release(&terminal_lock, flags);
 }
 
@@ -130,4 +137,103 @@ void terminal_write(const char *str)
 {
     while (*str)
         terminal_putchar(*str++);
+}
+
+void terminal_set_color(enum vga_color fg, enum vga_color bg)
+{
+    uint32_t flags = spinlock_acquire(&terminal_lock);
+    current_color = (unsigned char)((bg << 4) | (fg & 0x0F));
+    spinlock_release(&terminal_lock, flags);
+}
+
+void terminal_write_colored(const char *str, enum vga_color fg, enum vga_color bg)
+{
+    uint32_t flags = spinlock_acquire(&terminal_lock);
+
+    unsigned char previous_color = current_color;
+    current_color = (unsigned char)((bg << 4) | (fg & 0x0F));
+
+    while (*str)
+        terminal_putchar_locked(*str++);
+
+    current_color = previous_color;
+
+    spinlock_release(&terminal_lock, flags);
+}
+
+// Assumes terminal_lock is already held by the caller.
+static void write_formatted_locked(const char *format, va_list args)
+{
+    char number[16];
+
+    while (*format)
+    {
+        if (*format != '%')
+        {
+            terminal_putchar_locked(*format++);
+            continue;
+        }
+
+        format++;
+        switch (*format)
+        {
+        case 'u':
+            itoa(va_arg(args, unsigned int), number);
+            for (char *p = number; *p; p++)
+                terminal_putchar_locked(*p);
+            break;
+        case 'x':
+            itoa_hex(va_arg(args, unsigned int), number);
+            for (char *p = number; *p; p++)
+                terminal_putchar_locked(*p);
+            break;
+        case 's':
+            for (const char *s = va_arg(args, const char *); *s; s++)
+                terminal_putchar_locked(*s);
+            break;
+        case 'c':
+            terminal_putchar_locked((char)va_arg(args, int));
+            break;
+        case '%':
+            terminal_putchar_locked('%');
+            break;
+        default:
+            terminal_putchar_locked('%');
+            terminal_putchar_locked(*format);
+            break;
+        }
+
+        format++;
+    }
+}
+
+void terminal_writef(const char *format, ...)
+{
+    va_list args;
+    va_start(args, format);
+
+    uint32_t flags = spinlock_acquire(&terminal_lock);
+    write_formatted_locked(format, args);
+    spinlock_release(&terminal_lock, flags);
+
+    va_end(args);
+}
+
+void terminal_writef_colored(enum vga_color fg, enum vga_color bg, const char *format, ...)
+{
+    va_list args;
+    va_start(args, format);
+
+    uint32_t flags = spinlock_acquire(&terminal_lock);
+
+    unsigned char previous_color = current_color;
+    current_color = (unsigned char)((bg << 4) | (fg & 0x0F));
+
+    write_formatted_locked(format, args);
+
+    current_color = previous_color;
+
+    spinlock_release(&terminal_lock, flags);
+
+    va_end(args);
 }
