@@ -7,6 +7,14 @@ static thread_t boot_thread;
 static thread_t *current = 0;
 static spinlock_t scheduler_lock;
 
+// Runs whenever no real thread is ready, so scheduler_yield always has a
+// valid candidate to switch to instead of giving up on a BLOCKED current.
+static void idle_loop(void)
+{
+    while (1)
+        __asm__ volatile("hlt");
+}
+
 void scheduler_initialize(void)
 {
     boot_thread.id = 0;
@@ -17,6 +25,9 @@ void scheduler_initialize(void)
     boot_thread.next = &boot_thread;
 
     spinlock_initialize(&scheduler_lock);
+
+    thread_t *idle_thread = thread_create_sized(idle_loop, 1);
+    scheduler_add(idle_thread);
 }
 
 void scheduler_add(thread_t *thread)
@@ -44,9 +55,9 @@ void scheduler_yield(void)
             thread_destroy(dead);
         }
         // weird comparison style in case tick counter wraps around
-        else if (candidate->state == THREAD_BLOCKED && (int32_t)(pit_get_ticks() - candidate->wake_at) >= 0)
+        else if (candidate->state == THREAD_BLOCKED && (int32_t)(pit_get_ticks() - candidate->wake_at) < 0)
         {
-            // skip over this
+            // still asleep - skip over this
             prev = candidate;
             candidate = candidate->next;
         }

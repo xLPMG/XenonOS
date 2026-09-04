@@ -42,7 +42,7 @@
 
 // MARK: Thread
 
-#define STACK_PAGES 4 // Number of pages per thread stack
+#define DEFAULT_STACK_PAGES 4 // Default number of pages per thread stack
 #define STACK_REGION_BASE 0xD0000000 // Base address for thread stack region
 #define POINTER_SIZE sizeof(void *)
 

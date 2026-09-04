@@ -9,6 +9,7 @@
 static slab_cache_t thread_pool;
 static int thread_pool_ready = 0;
 static uint32_t next_stack_vaddr = STACK_REGION_BASE;
+static uint32_t next_thread_id = 1; // 0 is reserved for the boot thread
 
 static inline uint32_t stack_frame_vaddr(uint32_t stack_vbase, int i)
 {
@@ -33,7 +34,12 @@ static void thread_trampoline(void)
 // 4 callee-saved register slots, then a return address that
 // points at thread_trampoline so the first switch into this thread
 // "returns" into it, which then calls the real entry point.
-thread_t *thread_create(uint32_t id, void (*entry)(void))
+thread_t *thread_create(void (*entry)(void))
+{
+    return thread_create_sized(entry, DEFAULT_STACK_PAGES);
+}
+
+thread_t *thread_create_sized(void (*entry)(void), uint32_t stack_pages)
 {
     if (!thread_pool_ready)
     {
@@ -47,15 +53,16 @@ thread_t *thread_create(uint32_t id, void (*entry)(void))
         return 0;
 
     uint32_t stack_vbase = next_stack_vaddr;
-    next_stack_vaddr += (STACK_PAGES + 1) * PAGE_SIZE; // +1 for guard page
+    next_stack_vaddr += (stack_pages + 1) * PAGE_SIZE; // +1 for guard page
 
-    for (int i = 0; i < STACK_PAGES; i++)
+    for (uint32_t i = 0; i < stack_pages; i++)
     {
         uint32_t frame = pmm_alloc(); // allocate memory one frame at a time (physically separate frames)
         paging_map(stack_frame_vaddr(stack_vbase, i), frame, 3);
     }
     thread->mem = (void *)stack_vbase;
-    uint8_t *stack_top = (uint8_t *)(stack_vbase + STACK_PAGES * PAGE_SIZE);
+    thread->stack_pages = stack_pages;
+    uint8_t *stack_top = (uint8_t *)(stack_vbase + stack_pages * PAGE_SIZE);
 
     stack_top -= POINTER_SIZE;
     *(void **)stack_top = (void *)thread_trampoline;
@@ -68,7 +75,7 @@ thread_t *thread_create(uint32_t id, void (*entry)(void))
     }
 
     thread->esp = stack_top;
-    thread->id = id;
+    thread->id = next_thread_id++;
     thread->state = THREAD_READY;
     thread->next = 0;
     thread->entry = entry;
@@ -80,7 +87,7 @@ void thread_destroy(thread_t *thread)
 {
     // Free the stack frames allocated for this thread
     uint32_t stack_vbase = (uint32_t)thread->mem;
-    for (int i = 0; i < STACK_PAGES; i++)
+    for (uint32_t i = 0; i < thread->stack_pages; i++)
     {
         uint32_t vaddr = stack_frame_vaddr(stack_vbase, i);
         uint32_t frame = paging_get_physical(vaddr);
@@ -89,6 +96,7 @@ void thread_destroy(thread_t *thread)
     }
     slab_free(&thread_pool, thread);
 }
+
 
 void thread_sleep(uint32_t ms)
 {
