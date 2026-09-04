@@ -85,21 +85,22 @@ void pmm_initialize(uint32_t multiboot_info_address)
     }
 
     // 2) Read the Multiboot memory map and mark usable regions as FREE
-    struct multiboot_info *info =
-        (struct multiboot_info *)multiboot_info_address;
+    struct multiboot_tag_mmap *mmap_tag =
+        (struct multiboot_tag_mmap *)multiboot_find_tag(multiboot_info_address, MULTIBOOT_TAG_MMAP);
 
-    if (info->flags & MULTIBOOT_FLAG_MMAP)
+    if (mmap_tag)
     {
-        uint32_t offset = 0;
-        while (offset < info->mmap_length)
+        uint8_t *entry_ptr = (uint8_t *)mmap_tag + sizeof(struct multiboot_tag_mmap);
+        uint8_t *end = (uint8_t *)mmap_tag + mmap_tag->size;
+
+        while (entry_ptr < end)
         {
-            struct multiboot_mmap_entry *entry =
-                (struct multiboot_mmap_entry *)(info->mmap_addr + offset);
+            struct multiboot_mmap_entry *entry = (struct multiboot_mmap_entry *)entry_ptr;
 
             if (entry->type == MMAP_TYPE_AVAILABLE)
                 free_region(entry->addr, entry->len);
 
-            offset += entry->size + sizeof(entry->size);
+            entry_ptr += mmap_tag->entry_size;
         }
     }
 

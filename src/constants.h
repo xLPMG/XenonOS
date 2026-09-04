@@ -46,4 +46,12 @@
 #define STACK_REGION_BASE 0xD0000000 // Base address for thread stack region
 #define POINTER_SIZE sizeof(void *)
 
+// MARK: Framebuffer
+
+// Virtual region the linear framebuffer (found via PCI BAR0 of the VGA
+// device) gets identity-style mapped into. Sized well above any resolution
+// we currently target (1024x768x32 needs ~3 MB).
+#define FRAMEBUFFER_VIRTUAL_BASE 0xE0000000u
+#define FRAMEBUFFER_VIRTUAL_SIZE 0x00400000u // 4 MB
+
 #endif // CONSTANTS_H

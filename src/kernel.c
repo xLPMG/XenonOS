@@ -9,6 +9,7 @@
 #include "pit.h"
 #include "thread.h"
 #include "constants.h"
+#include "serial.h"
 
 unsigned int multiboot_info_address;
 
@@ -18,6 +19,7 @@ void kmain(unsigned int magic, unsigned int multiboot_info)
 
     multiboot_info_address = multiboot_info;
 
+    serial_initialize();
     shell_initialize();
     interrupts_initialize();
     pmm_initialize(multiboot_info_address);

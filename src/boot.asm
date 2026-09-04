@@ -1,11 +1,34 @@
 bits 32
 
 section .multiboot
-align 4
+align 8
+mb_header_start:
+    dd 0xE85250D6                               ; magic (multiboot2)
+    dd 0                                        ; architecture: 0 = i386 protected mode
+    dd mb_header_end - mb_header_start           ; header length
+    dd -(0xE85250D6 + 0 + (mb_header_end - mb_header_start)) ; checksum
 
-    dd 0x1BADB002
-    dd 0x00000003
-    dd -(0x1BADB002 + 0x00000003)
+    ; Framebuffer request tag - included by default (real hardware), left out
+    ; of the QEMU build (make xenonos-qemu.iso). Requesting one makes GRUB
+    ; switch video hardware into a broken graphics state on this QEMU/SeaBIOS
+    ; /GRUB combo regardless of VGA device emulated. framebuffer.c already
+    ; falls back to programming the hardware directly if no tag is supplied.
+%ifndef QEMU_BUILD
+    align 8
+    dw 5
+    dw 0
+    dd 20
+    dd 1024
+    dd 768
+    dd 32
+%endif
+
+    ; End tag
+    align 8
+    dw 0
+    dw 0
+    dd 8
+mb_header_end:
 
 section .text
 global _start

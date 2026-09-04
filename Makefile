@@ -33,8 +33,25 @@ xenonos.iso: xenonos.bin grub.cfg
 	cp grub.cfg iso/boot/grub/grub.cfg
 	$(GRUB) -o $@ iso
 
-run: xenonos.iso
-	$(QEMU) -cdrom xenonos.iso
+run: xenonos-qemu.iso
+	$(QEMU) -cdrom xenonos-qemu.iso -serial stdio
+
+# QEMU build: same sources, but boot.asm skips the framebuffer request tag
+# (unsafe in QEMU/SeaBIOS - see src/boot.asm). xenonos.iso is the real-
+# hardware build and is the default target.
+OBJECTS_QEMU := $(filter-out src/boot_asm.o,$(OBJECTS)) src/boot_qemu_asm.o
+
+src/boot_qemu_asm.o: src/boot.asm
+	$(AS) -f elf32 -D QEMU_BUILD $< -o $@
+
+xenonos-qemu.bin: $(OBJECTS_QEMU) linker.ld
+	$(LD) $(LDFLAGS) $(OBJECTS_QEMU) -o $@
+
+xenonos-qemu.iso: xenonos-qemu.bin grub.cfg
+	mkdir -p iso-qemu/boot/grub
+	cp xenonos-qemu.bin iso-qemu/boot/xenonos.bin
+	cp grub.cfg iso-qemu/boot/grub/grub.cfg
+	$(GRUB) -o $@ iso-qemu
 
 clean:
-	rm -rf src/*.o src/*/*.o xenonos.bin xenonos.iso iso
+	rm -rf src/*.o src/*/*.o xenonos.bin xenonos.iso iso xenonos-qemu.bin xenonos-qemu.iso iso-qemu
