@@ -3,6 +3,8 @@
 #include "paging.h"
 #include "constants.h"
 #include "multiboot.h"
+#include "heap.h"
+#include "string.h"
 
 #define VBE_DISPI_IOPORT_INDEX 0x01CE
 #define VBE_DISPI_IOPORT_DATA 0x01CF
@@ -22,7 +24,8 @@
 #define VBE_DISPI_ID_MIN 0xB0C0
 #define VBE_DISPI_ID_MAX 0xB0C5
 
-static struct framebuffer_info info;
+static struct framebuffer_info info; // info.addr is the off-screen draw buffer, see map_framebuffer()
+static uint32_t hw_addr; // real hardware-mapped framebuffer, written only by framebuffer_present()
 static int initialized = 0;
 
 static void dispi_write(uint16_t index, uint16_t value)
@@ -46,7 +49,13 @@ static void map_framebuffer(uint32_t physical_addr, uint32_t pitch, uint32_t wid
     for (uint32_t offset = 0; offset < size && offset < FRAMEBUFFER_VIRTUAL_SIZE; offset += PAGE_SIZE)
         paging_map(FRAMEBUFFER_VIRTUAL_BASE + offset, physical_addr + offset, 3);
 
-    info.addr = FRAMEBUFFER_VIRTUAL_BASE;
+    hw_addr = FRAMEBUFFER_VIRTUAL_BASE;
+
+    // Everything draws into this off-screen buffer instead of hw_addr directly,
+    // so partially-drawn frames are never visible - only framebuffer_present()
+    // ever touches the real hardware framebuffer, in one single fast copy.
+    info.addr = (uint32_t)kmalloc(size);
+    memset((void *)info.addr, 0, size);
     info.pitch = pitch;
     info.width = width;
     info.height = height;
@@ -114,4 +123,12 @@ int framebuffer_initialize(uint32_t multiboot_info_address, uint32_t width, uint
 const struct framebuffer_info *framebuffer_get_info(void)
 {
     return &info;
+}
+
+void framebuffer_present(void)
+{
+    if (!initialized)
+        return;
+
+    memcpy((void *)hw_addr, (void *)info.addr, info.pitch * info.height);
 }

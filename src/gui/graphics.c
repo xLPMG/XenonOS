@@ -109,6 +109,21 @@ void gfx_fill_rect(uint32_t x, uint32_t y, uint32_t w, uint32_t h, uint32_t colo
             gfx_put_pixel(x + col, y + row, color);
 }
 
+void gfx_draw_rect(uint32_t x, uint32_t y, uint32_t w, uint32_t h, uint32_t color)
+{
+    for (uint32_t row = 0; row < h; row++)
+    {
+        gfx_put_pixel(x, y + row, color);
+        gfx_put_pixel(x + w - 1, y + row, color);
+    }
+
+    for (uint32_t col = 0; col < w; col++)
+    {
+        gfx_put_pixel(x + col, y, color);
+        gfx_put_pixel(x + col, y + h - 1, color);
+    }
+}
+
 void gfx_draw_char(uint32_t x, uint32_t y, char c, uint32_t fg, uint32_t bg)
 {
     const uint8_t *glyph = glyph_for(c);

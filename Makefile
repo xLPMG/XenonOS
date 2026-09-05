@@ -4,9 +4,15 @@ AS = nasm
 GRUB = i686-elf-grub-mkrescue
 QEMU = qemu-system-x86_64
 
+GUI_WIDTH ?= 1920
+GUI_HEIGHT ?= 1200
+# to trigger a recompilation
+GUI_RESOLUTION_STAMP := .gui_resolution-$(GUI_WIDTH)x$(GUI_HEIGHT)
+
 CFLAGS = -m32 -O2 -ffreestanding -fno-pie -fno-stack-protector -nostdlib \
          -fno-tree-loop-distribute-patterns -fno-delete-null-pointer-checks \
          -mno-mmx -mno-sse -mno-sse2 -mno-sse3 -mno-ssse3 -mno-sse4 -mno-avx \
+         -DGUI_WIDTH=$(GUI_WIDTH) -DGUI_HEIGHT=$(GUI_HEIGHT) \
          -Isrc -Isrc/cpu -Isrc/io -Isrc/memory -Isrc/shell -Isrc/tasks -Isrc/utils -Isrc/tests -Isrc/gui
 LDFLAGS = -m elf_i386 -T linker.ld
 
@@ -18,8 +24,14 @@ OBJECTS := $(SOURCES_C:.c=.o) \
 
 all: xenonos.iso
 
-src/%.o: src/%.c
+src/%.o: src/%.c Makefile
 	$(CC) $(CFLAGS) -c $< -o $@
+
+src/shell/commands.o: $(GUI_RESOLUTION_STAMP)
+
+$(GUI_RESOLUTION_STAMP):
+	rm -f .gui_resolution-*
+	touch $@
 
 src/%_asm.o: src/%.asm
 	$(AS) -f elf32 $< -o $@
@@ -54,4 +66,4 @@ xenonos-qemu.iso: xenonos-qemu.bin grub.cfg
 	$(GRUB) -o $@ iso-qemu
 
 clean:
-	rm -rf src/*.o src/*/*.o xenonos.bin xenonos.iso iso xenonos-qemu.bin xenonos-qemu.iso iso-qemu
+	rm -rf src/*.o src/*/*.o xenonos.bin xenonos.iso iso xenonos-qemu.bin xenonos-qemu.iso iso-qemu .gui_resolution-*

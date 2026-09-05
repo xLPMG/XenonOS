@@ -9,8 +9,8 @@
 #include "test.h"
 #include "pit.h"
 #include "serial.h"
-#include "framebuffer.h"
 #include "graphics.h"
+#include "gui.h"
 
 static void help(void);
 static void info(void);
@@ -149,24 +149,144 @@ static void uptime(void)
     terminal_writef("Uptime: %uh %um %us\n> ", hours, minutes % 60, seconds % 60);
 }
 
+static gui_window_t welcome_window;
+
+static void welcome_window_draw(gui_window_t *window)
+{
+    uint32_t x = gui_window_content_x(window);
+    uint32_t y = gui_window_content_y(window);
+
+    gfx_draw_string(x + 4, y + 4, "Hello from XenonOS ^_^", 0x00FFFFFF, window->bg_color);
+    gfx_draw_string(x + 4, y + 16, "Reboot to get back to the shell.", 0x00FFFFFF, window->bg_color);
+}
+
+static gui_window_t info_window;
+
+static void info_window_draw(gui_window_t *window)
+{
+    uint32_t x = gui_window_content_x(window);
+    uint32_t y = gui_window_content_y(window);
+
+    char vendor[13];
+    unsigned int family, model;
+    char number[12];
+
+    extern unsigned int multiboot_info_address;
+    unsigned int memory_mb = memory_get_kb(multiboot_info_address) / 1024;
+
+    cpu_get_vendor(vendor);
+    cpu_get_version(&family, &model);
+
+    gfx_draw_string(x + 4, y + 4, "CPU vendor:", 0x00FFFFFF, window->bg_color);
+    gfx_draw_string(x + 96, y + 4, vendor, 0x00FFFFFF, window->bg_color);
+
+    itoa(family, number);
+    gfx_draw_string(x + 4, y + 16, "CPU family:", 0x00FFFFFF, window->bg_color);
+    gfx_draw_string(x + 96, y + 16, number, 0x00FFFFFF, window->bg_color);
+
+    itoa(model, number);
+    gfx_draw_string(x + 4, y + 28, "CPU model:", 0x00FFFFFF, window->bg_color);
+    gfx_draw_string(x + 96, y + 28, number, 0x00FFFFFF, window->bg_color);
+
+    itoa(memory_mb, number);
+    gfx_draw_string(x + 4, y + 40, "Memory (MB):", 0x00FFFFFF, window->bg_color);
+    gfx_draw_string(x + 96, y + 40, number, 0x00FFFFFF, window->bg_color);
+}
+
+#define NOTES_BUFFER_SIZE 64
+
+// user_data for notes_window, showcasing per-window state passed through the
+// on_draw/on_key callbacks instead of relying on globals.
+typedef struct
+{
+    char text[NOTES_BUFFER_SIZE];
+    int length;
+} notes_state_t;
+
+static gui_window_t notes_window;
+static notes_state_t notes_state;
+
+static void notes_window_draw(gui_window_t *window)
+{
+    uint32_t x = gui_window_content_x(window);
+    uint32_t y = gui_window_content_y(window);
+    notes_state_t *state = (notes_state_t *)window->user_data;
+
+    gfx_fill_rect(x, y, gui_window_content_width(window), gui_window_content_height(window), window->bg_color);
+    gfx_draw_string(x + 4, y + 4, "Focused window - type something:", 0x00FFFFFF, window->bg_color);
+    gfx_draw_string(x + 4, y + 16, state->text, 0x00FFFFFF, window->bg_color);
+}
+
+static void notes_window_key(gui_window_t *window, char c)
+{
+    notes_state_t *state = (notes_state_t *)window->user_data;
+
+    if (c == '\b')
+    {
+        if (state->length > 0)
+            state->text[--state->length] = '\0';
+    }
+    else if (c >= ' ' && state->length < NOTES_BUFFER_SIZE - 1)
+    {
+        state->text[state->length++] = c;
+        state->text[state->length] = '\0';
+    }
+
+    gui_redraw_window(window);
+}
+
 // Switches to graphics mode on demand, keeping the VGA text console as the
-// default so it stays usable until the user opts into the GUI.
+// default so it stays usable until the user opts into the GUI. There is no
+// way back once entered - see gui_is_active() in gui.h.
 static void gui(void)
 {
     extern unsigned int multiboot_info_address;
 
-    if (!framebuffer_initialize(multiboot_info_address, 1024, 768, 32))
+    if (!gui_initialize(multiboot_info_address, GUI_WIDTH, GUI_HEIGHT, 32))
     {
         terminal_write_colored("I couldn't find a VGA PCI device. No graphics mode for you >:(.\n\n> ", VGA_COLOR_RED, VGA_COLOR_BLACK);
         return;
     }
 
-    const struct framebuffer_info *fb = framebuffer_get_info();
+    // First window added gets keyboard focus - see gui_add_window() in gui.c.
+    notes_window = (gui_window_t){
+        .title = "Notes",
+        .x = 40,
+        .y = 40,
+        .width = 360,
+        .height = 100,
+        .bg_color = 0x00202020,
+        .on_draw = notes_window_draw,
+        .on_key = notes_window_key,
+        .user_data = &notes_state,
+    };
 
-    gfx_fill_rect(0, 0, fb->width, fb->height, 0x00202020);
-    gfx_draw_string(16, 16, "Hello from XenonOS ^_^", 0x00FFFFFF, 0x00202020);
+    welcome_window = (gui_window_t){
+        .title = "Welcome",
+        .x = 440,
+        .y = 40,
+        .width = 320,
+        .height = 100,
+        .bg_color = 0x00202020,
+        .on_draw = welcome_window_draw,
+        .on_key = 0,
+    };
 
-    serial_write("Switched to graphics mode.\n");
+    info_window = (gui_window_t){
+        .title = "System Info",
+        .x = 40,
+        .y = 180,
+        .width = 320,
+        .height = 120,
+        .bg_color = 0x00202020,
+        .on_draw = info_window_draw,
+        .on_key = 0,
+    };
+
+    gui_add_window(&notes_window);
+    gui_add_window(&welcome_window);
+    gui_add_window(&info_window);
+    gui_enter();
 }
 
 static void run_tests(void)

@@ -4,6 +4,7 @@
 #include "commands.h"
 #include "types.h"
 #include "io_helper.h"
+#include "gui.h"
 
 #define INPUT_SIZE 128
 
@@ -96,6 +97,14 @@ void keyboard_handler(void)
 
     if (caps_lock && !shift && c >= 'A' && c <= 'Z')
         c += 'a' - 'A';
+
+    // While the GUI owns the screen, it owns keystrokes too - permanently,
+    // since there's no safe way back to the text shell without a reboot.
+    if (gui_is_active())
+    {
+        gui_handle_key(c);
+        return;
+    }
 
     // Backspace
     if (c == '\b')

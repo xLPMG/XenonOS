@@ -5,3 +5,4 @@ iso-qemu/
 *.iso
 .DS_Store
 .vscode/
+.gui_*

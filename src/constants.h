@@ -50,8 +50,8 @@
 
 // Virtual region the linear framebuffer (found via PCI BAR0 of the VGA
 // device) gets identity-style mapped into. Sized well above any resolution
-// we currently target (1024x768x32 needs ~3 MB).
+// we currently target (1920x1200x32 needs ~9 MB).
 #define FRAMEBUFFER_VIRTUAL_BASE 0xE0000000u
-#define FRAMEBUFFER_VIRTUAL_SIZE 0x00400000u // 4 MB
+#define FRAMEBUFFER_VIRTUAL_SIZE 0x00A00000u // 10 MB
 
 #endif // CONSTANTS_H
